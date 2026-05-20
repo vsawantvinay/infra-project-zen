@@ -24,6 +24,8 @@ This guide walks you through setting up the zen-pharma infrastructure on your ow
 13. [Day-2 Operations](#13-day-2-operations)
 14. [Cluster Cleanup / Destroying Infrastructure](#14-destroying-infrastructure)
 15. [Troubleshooting](#15-troubleshooting)
+16. [Interview Preparation](#16-interview-preparation)
+17. [Creating a GitHub PAT for zen-gitops](#17-creating-a-github-pat-for-zen-gitops)
 
 ---
 
@@ -997,6 +999,87 @@ After completing this lab you have built and deployed real infrastructure — no
 
 - [Terraform Interview Questions](docs/terraform-interview-questions.md) — 40 questions covering core concepts, state management, modules, CI/CD pipeline, and real-world scenarios with zen-infra references
 - GitHub Actions Interview Questions — coming soon
+
+---
+
+## 17. Creating a GitHub PAT for zen-gitops
+
+The GitOps pipeline writes manifests and opens PRs against the `zen-gitops` repository. This requires a GitHub Personal Access Token (PAT) with write access to that repo.
+
+### 17.1 Create a Fine-Grained PAT (Recommended)
+
+Fine-grained PATs limit scope to a single repository and specific permissions — safer than classic tokens.
+
+1. Go to **GitHub → Settings** (your account settings, not a repo's settings)
+2. Navigate to **Developer settings → Personal access tokens → Fine-grained tokens**
+3. Click **Generate new token**
+4. Fill in the form:
+
+| Field | Value |
+|---|---|
+| **Token name** | `zen-gitops-writer` (or any descriptive name) |
+| **Expiration** | 90 days (set a calendar reminder to rotate) |
+| **Resource owner** | Your GitHub username or org that owns `zen-gitops` |
+| **Repository access** | **Only select repositories** → choose `zen-gitops` |
+
+5. Under **Permissions → Repository permissions**, set:
+
+| Permission | Level |
+|---|---|
+| **Contents** | Read and write |
+| **Pull requests** | Read and write |
+| **Metadata** | Read-only (auto-selected, cannot be removed) |
+
+6. Click **Generate token**
+7. **Copy the token immediately** — it is only shown once
+
+### 17.2 Create a Classic PAT (Alternative)
+
+If your organisation does not allow fine-grained PATs:
+
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+2. Click **Generate new token (classic)**
+3. Fill in:
+
+| Field | Value |
+|---|---|
+| **Note** | `zen-gitops-writer` |
+| **Expiration** | 90 days |
+
+4. Under **Select scopes**, check **`repo`** (this covers contents write and PR creation for private repos)
+5. Click **Generate token**
+6. **Copy the token immediately**
+
+> **Note**: The `repo` scope on classic tokens grants full access to all repositories. Prefer fine-grained PATs when possible.
+
+### 17.3 Store the Token in GitHub Secrets
+
+Add the token as a secret in the repository that runs your GitOps pipeline:
+
+**Settings → Secrets and variables → Actions → Secrets tab → New repository secret**
+
+| Secret Name | Value |
+|---|---|
+| `GITOPS_PAT` | The token you just generated |
+
+Reference it in your workflow:
+
+```yaml
+- name: Create GitOps PR
+  env:
+    GH_TOKEN: ${{ secrets.GITOPS_PAT }}
+  run: gh pr create --repo YOUR-ORG/zen-gitops --title "..." --body "..."
+```
+
+### 17.4 Verify the Token Works
+
+```bash
+# Replace TOKEN and YOUR-ORG with your values
+curl -H "Authorization: Bearer TOKEN" \
+  https://api.github.com/repos/YOUR-ORG/zen-gitops
+
+# Should return repo metadata (not a 401 or 403)
+```
 
 ---
 

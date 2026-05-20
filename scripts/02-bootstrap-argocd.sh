@@ -7,10 +7,13 @@
 #   2. Creates the pharma AppProject
 #   3. Deploys all ArgoCD Application manifests for the target environment
 #
-# Run from the root of the dpp-assignment3 directory.
+# Can be run from any directory — paths are resolved relative to this script.
 # The script prompts for all required values - nothing is hardcoded.
 # =============================================================================
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -207,7 +210,7 @@ echo "--------------------------------------------"
 echo "  Step 2 of 3: Create pharma AppProject"
 echo "--------------------------------------------"
 
-PROJECT_FILE="zen-gitops/argocd/projects/pharma-project.yaml"
+PROJECT_FILE="$WORKSPACE_ROOT/zen-gitops/argocd/projects/pharma-project.yaml"
 if [[ -f "$PROJECT_FILE" ]]; then
   sed "s|your-github-username|${GITHUB_USERNAME}|g" "$PROJECT_FILE" | kubectl apply -f -
   log "AppProject applied from $PROJECT_FILE"
@@ -253,7 +256,7 @@ echo "--------------------------------------------"
 echo "  Step 3 of 3: Deploy Applications ($ENV)"
 echo "--------------------------------------------"
 
-APPS_DIR="zen-gitops/argocd/apps/$ENV"
+APPS_DIR="$WORKSPACE_ROOT/zen-gitops/argocd/apps/$ENV"
 [[ -d "$APPS_DIR" ]] || die "Apps directory not found: $APPS_DIR"
 
 if [[ "$ENV" == "dev" ]]; then
